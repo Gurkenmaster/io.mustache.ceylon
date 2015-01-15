@@ -1,7 +1,8 @@
 interface Mustache {
 	shared formal String render(Context data);
 }
-class Template(shared {Mustache*} childMustaches) satisfies Mustache {
+class Template(shared String template) satisfies Mustache {
+	shared {Mustache*} childMustaches = groupTags(findTags(template));
 	render(Context data) => "".join(childMustaches*.render(data));
 }
 class CommentMustache(shared String comment) satisfies Mustache {

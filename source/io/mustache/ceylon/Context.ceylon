@@ -1,6 +1,8 @@
 import ceylon.collection {
 	HashMap
 }
+shared alias PrimitiveData => Integer|Float|Boolean|String;
+
 shared abstract class Context(parent)
 		satisfies Correspondence<String,Context> {
 	shared Context? parent;
