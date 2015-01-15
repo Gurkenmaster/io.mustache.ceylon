@@ -55,9 +55,7 @@ Map<Character,String> htmlEscapeCharacters = HashMap {
 	'&'->"&amp;",
 	'<'->"&lt;",
 	'>'->"&gt;",
-	'"'->"&quot;",
-	'\''->"&#39;",
-	'/'->"&#x2F;"
+	'"'->"&quot;"
 };
 String escapeHtml(String html)
 		=> String(expand(html.map((char) => htmlEscapeCharacters[char] else char.string)));

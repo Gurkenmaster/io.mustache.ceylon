@@ -53,7 +53,7 @@ class SectionMustache(shared String variable, shared {Mustache*} childMustaches)
 		if (is ListContext item, item.empty) {
 			return "";
 		}
-		return "".join { for (element in data.sequence) childMustaches*.render(element) };
+		return "".join { for (element in data.sequence) "".join(childMustaches*.render(element)) };
 	}
 }
 "Inverted Section Tag: {{^variable}}List is empty{{/variable}}
