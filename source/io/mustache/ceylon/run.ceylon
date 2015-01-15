@@ -15,7 +15,6 @@ Context sampleData = asContext(HashMap {
 	});
 
 Context asContext(Map<String,Anything> map, Context? parent = null) {
-	print(map);
 	value hashmap = HashMap<String,Context>();
 	value context = MapContext(hashmap);
 	hashmap.putAll(map.mapItems((String key, Anything item) {
@@ -33,7 +32,6 @@ Context asContext(Map<String,Anything> map, Context? parent = null) {
 "Run the module `io.mustache.ceylon`."
 shared void run() {
 	value tags = groupTags(findTags(sampleTemplate));
-	print(sampleData["name"]);
 	print(Template(tags).render(sampleData));
 }
 

@@ -12,7 +12,6 @@ class MapContext(HashMap<String,Context> map, Context? parent = null) extends Co
 }
 class ConstContext(shared PrimitiveData const, Context? parent = null) extends Context(parent) {
 	shared actual Context? get(String key) {
-		print(this);
 		return parent?.get(key);
 	}
 	defines(String key) => false;
