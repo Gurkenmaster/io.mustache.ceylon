@@ -1,7 +1,7 @@
 import ceylon.collection {
 	HashMap
 }
-shared abstract class Context(parent) of MapContext | ConstContext
+shared abstract class Context(parent)
 		satisfies Correspondence<String,Context> {
 	shared Context? parent;
 }
@@ -16,4 +16,19 @@ class ConstContext(shared PrimitiveData const, Context? parent = null) extends C
 	}
 	defines(String key) => false;
 	string => const.string;
+}
+
+Context asContext(Map<String,Anything> map, Context? parent = null) {
+	value hashmap = HashMap<String,Context>();
+	value context = MapContext(hashmap);
+	hashmap.putAll(map.mapItems((String key, Anything item) {
+				if (is PrimitiveData item) {
+					return ConstContext(item, context);
+				}
+				if (is Map<String,Anything> item) {
+					return asContext(item, context);
+				}
+				return ConstContext(false);
+			}));
+	return context;
 }

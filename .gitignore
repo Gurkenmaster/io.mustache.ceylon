@@ -1,2 +1,4 @@
 *.class
 modules/io/mustache/ceylon/
+/.exploded/
+/classes/
