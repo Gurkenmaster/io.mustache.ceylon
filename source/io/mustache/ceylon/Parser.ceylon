@@ -2,7 +2,7 @@ import ceylon.collection {
 	HashMap,
 	ArrayList
 }
-[Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean invertedSection = false) {
+shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean invertedSection = false) {
 	value mustaches = ArrayList<Mustache>();
 	if (tags.empty) {
 		return [];
@@ -60,7 +60,7 @@ Map<Character,String> htmlEscapeCharacters = HashMap {
 String escapeHtml(String html)
 		=> String(expand(html.map((char) => htmlEscapeCharacters[char] else char.string)));
 
-[String*] findTags(String template) {
+shared [String*] findTags(String template) {
 	value list = ArrayList<String>();
 	variable Integer braces = 0;
 	variable Integer start = -1;
@@ -87,6 +87,9 @@ String escapeHtml(String html)
 				builder.append(ch.string);
 			}
 		}
+	}
+	if(start == -1) {
+		list.add(builder.string);
 	}
 	return list.sequence();
 }

@@ -7,11 +7,13 @@ shared interface Mustache {
 shared class Template(shared String template) satisfies Mustache {
 	shared {Mustache*} childMustaches = groupTags(findTags(template));
 	render(Context data) => "".join(childMustaches*.render(data));
+	string => "".join(childMustaches);
 }
 "{{! Comment}}
  This tag is simply ignored"
 class CommentMustache(shared String comment) satisfies Mustache {
 	render(Context data) => "";
+	string => "COMMENT(``comment``)";
 }
 "HTML escaped variable tag: {{variable}}
  The tag will be substituted with the content of the variable"
