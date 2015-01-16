@@ -51,6 +51,15 @@ shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean 
 	return mustaches.sequence();
 }
 
+/*[Mustache*] stripStandaloneTags([Mustache*] tags)
+	=> tags.paired.map(([Mustache, Mustache] element) {
+	if(is LiteralMustache now = element[0],
+		!is LiteralMustache next = element[1]) {
+		 
+	}
+	return element[0];
+}).sequence();*/
+
 Map<Character,String> htmlEscapeCharacters = HashMap {
 	'&'->"&amp;",
 	'<'->"&lt;",
