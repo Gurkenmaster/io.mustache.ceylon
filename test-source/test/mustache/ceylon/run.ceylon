@@ -48,7 +48,6 @@ shared void testSpec() {
 		value expected = test.getString("expected");
 		value teTemplate = Template(template);
 		value context = asContext(data);
-		print(context);
 		value got = teTemplate.render(context);
 		if (got == expected) {
 			continue;

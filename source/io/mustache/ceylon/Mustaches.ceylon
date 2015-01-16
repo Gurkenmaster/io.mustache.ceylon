@@ -50,7 +50,6 @@ class LiteralMustache(shared String text) satisfies Mustache {
 class SectionMustache(shared String variable, shared {Mustache*} childMustaches) satisfies Mustache {
 	string => "SECTION(``variable``: ``",".join(childMustaches)``)";
 	shared actual String render(Context data) {
-		print("start sect");
 		value item = data[variable];
 		if (is ConstContext item, item.const == false) {
 			return "";

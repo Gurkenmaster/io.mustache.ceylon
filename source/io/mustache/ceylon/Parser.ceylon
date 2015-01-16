@@ -11,16 +11,16 @@ shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean 
 		if (tag.startsWith("{{"), tag.endsWith("}}")) {
 			switch (tag[2])
 			case ('{') {
-				value variable = tag[3 .. tag.size - 4];
+				value variable = tag[3 .. tag.size - 4].trimmed;
 				mustaches.add(TextMustache(variable));
 			}
 			case ('#') {
-				value variable = tag[3 .. tag.size - 3];
+				value variable = tag[3 .. tag.size - 3].trimmed;
 				value submustaches = groupTags(tags.skip(i + 1).sequence(), variable.string);
 				return mustaches.sequence().append(submustaches);
 			}
 			case ('/') {
-				value variable = tag[3 .. tag.size - 3];
+				value variable = tag[3 .. tag.size - 3].trimmed;
 				if (exists closingTag, variable == closingTag) {
 					value submustaches = groupTags(tags.skip(i + 1).sequence());
 					if (invertedSection) {
@@ -31,7 +31,7 @@ shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean 
 				}
 			}
 			case ('&') {
-				value variable = tag[3 .. tag.size - 3];
+				value variable = tag[3 .. tag.size - 3].trimmed;
 				mustaches.add(TextMustache(variable));
 			}
 			case ('!') {
@@ -39,12 +39,12 @@ shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean 
 				mustaches.add(CommentMustache(comment));
 			}
 			case ('^') {
-				value variable = tag[3 .. tag.size - 3];
+				value variable = tag[3 .. tag.size - 3].trimmed;
 				value submustaches = groupTags(tags.skip(i + 1).sequence(), variable.string, true);
 				return mustaches.sequence().append(submustaches);
 			}
 			else {
-				value variable = tag[2 .. tag.size - 3];
+				value variable = tag[2 .. tag.size - 3].trimmed;
 				mustaches.add(HtmlMustache(variable));
 			}
 		} else {
