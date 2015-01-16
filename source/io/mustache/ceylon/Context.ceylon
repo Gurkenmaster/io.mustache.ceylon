@@ -32,10 +32,10 @@ class ConstContext(shared PrimitiveData const, Context? parent = null) extends C
 	sequence => [this];
 }
 
-Context asContext(Map<String,Anything> map, Context? parent = null) {
+shared Context asContext({<String->Anything>*} entries, Context? parent = null) {
 	value hashmap = HashMap<String,Context>();
 	value context = MapContext(hashmap);
-	hashmap.putAll(map.mapItems((String key, Anything item) {
+	hashmap.putAll(HashMap<String,Anything> { *entries }.mapItems((String key, Anything item) {
 				if (is PrimitiveData item) {
 					return ConstContext(item, context);
 				}

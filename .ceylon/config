@@ -1,3 +1,7 @@
 
 [defaults]
 encoding=Cp1252
+
+[compiler]
+source=source
+source=test-source

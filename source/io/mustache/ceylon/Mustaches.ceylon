@@ -1,10 +1,10 @@
-interface Mustache {
+shared interface Mustache {
 	shared formal String render(Context data);
 }
 "A Mustache Template
  
  Parses the given string template and offers the method template.render(context) to render all tags"
-class Template(shared String template) satisfies Mustache {
+shared class Template(shared String template) satisfies Mustache {
 	shared {Mustache*} childMustaches = groupTags(findTags(template));
 	render(Context data) => "".join(childMustaches*.render(data));
 }

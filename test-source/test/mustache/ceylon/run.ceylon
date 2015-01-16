@@ -1,5 +1,10 @@
-import ceylon.collection {
-	HashMap
+import ceylon.test {
+	test
+}
+import io.mustache.ceylon {
+	Context,
+	asContext,
+	Template
 }
 String sampleTemplate = """Hello {{name}}
                            You have just won {{value}} dollars!
@@ -23,23 +28,24 @@ String expectedOutput = """Hello Chris
                            
                            Shown.
                            """;
-Context sampleData = asContext(HashMap {
-		"name"->"Chris",
-		"value"->10000.0,
-		"taxed_value" -> 10000 - (10000 * 0.4),
-		"in_ca"->true,
-		"name"->"Chris",
-		"company"->"<b>GitHub</b>",
-		"person"->false,
-		"repo"->{
-			"name"->"resque",
-			"name"->"hub",
-			"name"->"rip"
-		}
-	});
+Context sampleData = asContext{
+	"name"->"Chris",
+	"value"->10000.0,
+	"taxed_value" -> 10000 - (10000 * 0.4),
+	"in_ca"->true,
+	"name"->"Chris",
+	"company"->"<b>GitHub</b>",
+	"person"->false,
+	"repo"->{
+		"name"->"resque",
+		"name"->"hub",
+		"name"->"rip"
+	}
+};
 
 "Run the module `io.mustache.ceylon`."
-shared void testMustache() {
+test
+void testMustache() {
 	value rendered = Template(sampleTemplate).render(sampleData);
 	print("Expected:");
 	print(expectedOutput);
