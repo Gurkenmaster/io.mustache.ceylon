@@ -57,7 +57,7 @@ shared [Mustache*] stripStandaloneWhitespace([Mustache*] mustaches) {
 	value list = ArrayList<Mustache>();
 	list.addAll(mustaches);
 	for (i->element in mustaches.indexed) {
-		if (!is LiteralMustache element) {
+		if (!is LiteralMustache element, element.standalone) {
 			if (is LiteralMustache previous = list[i - 1]) {
 				value split = previous.text.split('\n'.equals).last;
 				if (exists split, split.trimmed == "") {

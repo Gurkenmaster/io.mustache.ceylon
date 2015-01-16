@@ -1,5 +1,6 @@
 shared interface Mustache {
 	shared formal String render(Context data);
+	shared default Boolean standalone => true;
 }
 "A Mustache Template
  
@@ -26,6 +27,7 @@ class HtmlMustache(shared String variable) satisfies Mustache {
 			return "";
 		}
 	}
+	standalone => false;
 }
 "This class is not a real tag. It's just a literal string"
 class LiteralMustache(shared String text) satisfies Mustache {
@@ -83,4 +85,5 @@ class InvertedSectionMustache(shared String variable, shared {Mustache*} childMu
 class TextMustache(shared String variable) satisfies Mustache {
 	string => "TEXT(``variable``)";
 	render(Context data) => data[variable]?.string else "";
+	standalone => false;
 }

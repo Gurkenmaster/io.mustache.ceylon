@@ -50,7 +50,9 @@ shared void testSpec() {
 		value context = asContext(data);
 		print(context);
 		value got = teTemplate.render(context);
-		
+		if (got == expected) {
+			continue;
+		}
 		print(got == expected then "PASSED:" else "FAIL:");
 		print("-".repeat(30));
 		print(test["desc"]);
