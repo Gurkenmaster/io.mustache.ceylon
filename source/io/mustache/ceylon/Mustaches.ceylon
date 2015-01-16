@@ -48,6 +48,7 @@ class LiteralMustache(shared String text) satisfies Mustache {
 class SectionMustache(shared String variable, shared {Mustache*} childMustaches) satisfies Mustache {
 	string => "SECTION(``variable``: ``",".join(childMustaches)``)";
 	shared actual String render(Context data) {
+		print("start sect");
 		value item = data[variable];
 		if (is ConstContext item, item.const == false) {
 			return "";
@@ -55,7 +56,10 @@ class SectionMustache(shared String variable, shared {Mustache*} childMustaches)
 		if (is ListContext item, item.empty) {
 			return "";
 		}
-		return "".join { for (element in data.sequence) "".join(childMustaches*.render(element)) };
+		return "".join {
+			for (element in item?.sequence else [])
+				"".join(childMustaches*.render(element))
+		};
 	}
 }
 "Inverted Section Tag: {{^variable}}List is empty{{/variable}}

@@ -47,7 +47,9 @@ shared void testSpec() {
 		value template = test.getString("template");
 		value expected = test.getString("expected");
 		value teTemplate = Template(template);
-		value got = teTemplate.render(asContext(data.sequence()));
+		value context = asContext(data);
+		print(context);
+		value got = teTemplate.render(context);
 		
 		print(got == expected then "PASSED:" else "FAIL:");
 		print("-".repeat(30));
