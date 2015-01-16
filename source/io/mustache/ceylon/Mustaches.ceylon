@@ -5,7 +5,7 @@ shared interface Mustache {
  
  Parses the given string template and offers the method template.render(context) to render all tags"
 shared class Template(shared String template) satisfies Mustache {
-	shared {Mustache*} childMustaches = groupTags(findTags(template));
+	shared {Mustache*} childMustaches = stripStandaloneWhitespace(groupTags(findTags(template)));
 	render(Context data) => "".join(childMustaches*.render(data));
 	string => "".join(childMustaches);
 }

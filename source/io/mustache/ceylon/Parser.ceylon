@@ -30,7 +30,10 @@ shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean 
 					}
 				}
 			}
-			case ('&') {}
+			case ('&') {
+				value variable = tag[3 .. tag.size - 3];
+				mustaches.add(TextMustache(variable));
+			}
 			case ('!') {
 				value comment = tag[3 .. tag.size - 3];
 				mustaches.add(CommentMustache(comment));
@@ -50,16 +53,29 @@ shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean 
 	}
 	return mustaches.sequence();
 }
-
-/*[Mustache*] stripStandaloneTags([Mustache*] tags)
-	=> tags.paired.map(([Mustache, Mustache] element) {
-	if(is LiteralMustache now = element[0],
-		!is LiteralMustache next = element[1]) {
-		 
+shared [Mustache*] stripStandaloneWhitespace([Mustache*] mustaches) {
+	value list = ArrayList<Mustache>();
+	list.addAll(mustaches);
+	for (i->element in mustaches.indexed) {
+		if (!is LiteralMustache element) {
+			if (is LiteralMustache previous = list[i - 1]) {
+				value split = previous.text.split('\n'.equals).last;
+				if (exists split, split.trimmed == "") {
+					list.set(i - 1, LiteralMustache(previous.text[... previous.text.size - split.size - 1]));
+				} else {
+					continue;
+				}
+			}
+			if (is LiteralMustache next = mustaches[i + 1]) {
+				value split = next.text.split('\n'.equals).first;
+				if (exists split, split.trimmed == "") {
+					list.set(i + 1, (LiteralMustache(next.text[split.size + 1 ...])));
+				}
+			}
+		}
 	}
-	return element[0];
-}).sequence();*/
-
+	return list.sequence();
+}
 Map<Character,String> htmlEscapeCharacters = HashMap {
 	'&'->"&amp;",
 	'<'->"&lt;",
@@ -97,7 +113,7 @@ shared [String*] findTags(String template) {
 			}
 		}
 	}
-	if(start == -1) {
+	if (start == -1) {
 		list.add(builder.string);
 	}
 	return list.sequence();
