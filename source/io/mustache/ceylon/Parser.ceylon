@@ -2,8 +2,21 @@ import ceylon.collection {
 	HashMap,
 	ArrayList
 }
-shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean invertedSection = false) {
-	value mustaches = ArrayList<Mustache>();
+shared [Mustache*] groupTags([String*] tags) {
+	value topLevelSection = SectionMustache("", ArrayList<Mustache>());
+	value sectionStack = ArrayList<SectionMustache> { topLevelSection };
+	SectionMustache peek {
+		"Stack empty"
+		assert (exists last = sectionStack.last);
+		return last;
+	}
+	SectionMustache pop() {
+		sectionStack.remove(peek);
+		return peek;
+	}
+	void push(SectionMustache must) {
+		sectionStack.add(must);
+	}
 	if (tags.empty) {
 		return [];
 	}
@@ -12,51 +25,53 @@ shared [Mustache*] groupTags([String*] tags, String? closingTag = null, Boolean 
 			switch (tag[2])
 			case ('{') {
 				value variable = tag[3 .. tag.size - 4].trimmed;
-				mustaches.add(TextMustache(variable));
+				peek.childMustaches.add(TextMustache(variable));
 			}
 			case ('#') {
 				value variable = tag[3 .. tag.size - 3].trimmed;
-				value submustaches = groupTags(tags.skip(i + 1).sequence(), variable.string);
-				return mustaches.sequence().append(submustaches);
+				value sectionMustache = SectionMustache(variable, ArrayList<Mustache>());
+				peek.childMustaches.add(sectionMustache);
+				push(sectionMustache);
 			}
 			case ('/') {
 				value variable = tag[3 .. tag.size - 3].trimmed;
-				if (exists closingTag, variable == closingTag) {
-					value submustaches = groupTags(tags.skip(i + 1).sequence());
-					if (invertedSection) {
-						return [InvertedSectionMustache(closingTag, mustaches)].append(submustaches);
-					} else {
-						return [SectionMustache(closingTag, mustaches)].append(submustaches);
-					}
+				if (variable == peek.variable) {
+					pop();
 				}
 			}
 			case ('&') {
 				value variable = tag[3 .. tag.size - 3].trimmed;
-				mustaches.add(TextMustache(variable));
+				peek.childMustaches.add(TextMustache(variable));
 			}
 			case ('!') {
 				value comment = tag[3 .. tag.size - 3];
-				mustaches.add(CommentMustache(comment));
+				peek.childMustaches.add(CommentMustache(comment));
 			}
 			case ('^') {
 				value variable = tag[3 .. tag.size - 3].trimmed;
-				value submustaches = groupTags(tags.skip(i + 1).sequence(), variable.string, true);
-				return mustaches.sequence().append(submustaches);
+				value sectionMustache = SectionMustache(variable, ArrayList<Mustache>(), true);
+				peek.childMustaches.add(sectionMustache);
+				push(sectionMustache);
 			}
 			else {
 				value variable = tag[2 .. tag.size - 3].trimmed;
-				mustaches.add(HtmlMustache(variable));
+				peek.childMustaches.add(HtmlMustache(variable));
 			}
 		} else {
-			mustaches.add(LiteralMustache(tag));
+			peek.childMustaches.add(LiteralMustache(tag));
 		}
 	}
-	return mustaches.sequence();
+	assert (exists first = sectionStack.first);
+	return first.childMustaches.sequence();
 }
 shared [Mustache*] stripStandaloneWhitespace([Mustache*] mustaches) {
 	value list = ArrayList<Mustache>();
 	list.addAll(mustaches);
 	for (i->element in mustaches.indexed) {
+		if (is SectionMustache element) {
+			value newMustache = SectionMustache(element.variable, ArrayList<Mustache> { *stripStandaloneWhitespace(element.childMustaches.sequence()) });
+			list.set(i, newMustache);
+		}
 		if (!is LiteralMustache element, element.standalone) {
 			if (is LiteralMustache previous = list[i - 1]) {
 				value split = previous.text.split('\n'.equals).last;

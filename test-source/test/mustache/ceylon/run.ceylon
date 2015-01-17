@@ -41,7 +41,7 @@ Array retrieveTestsFromSpec(String filename) {
 
 test
 shared void testSpec() {
-	for (test in retrieveTestsFromSpec("interpolation")) {
+	for (test in retrieveTestsFromSpec("sections")[...4]) {
 		assert (is Object test);
 		assert (is Object data = test["data"]);
 		value template = test.getString("template");
@@ -52,6 +52,27 @@ shared void testSpec() {
 		if (got == expected) {
 			continue;
 		}
+		print(context);
+		print(got == expected then "PASSED:" else "FAIL:");
+		print("-".repeat(30));
+		print(test["desc"]);
+		print(teTemplate);
+		print("Template:\n ``template``");
+		print("Expected:\n ``expected``");
+		print("Got:\n ``got``");
+		print("-".repeat(30));
+	}
+}
+test
+shared void testInterpolationSpec() {
+	for (test in retrieveTestsFromSpec("interpolation")) {
+		assert (is Object test);
+		assert (is Object data = test["data"]);
+		value template = test.getString("template");
+		value expected = test.getString("expected");
+		value teTemplate = Template(template);
+		value context = asContext(data);
+		value got = teTemplate.render(context);
 		print(got == expected then "PASSED:" else "FAIL:");
 		print("-".repeat(30));
 		print(test["desc"]);
@@ -70,7 +91,7 @@ shared void testCommentSpec() {
 		value template = test.getString("template");
 		value expected = test.getString("expected");
 		value teTemplate = Template(template);
-		value got = teTemplate.render(asContext { });
+		value got = teTemplate.render(asContext());
 		
 		print(got == expected then "PASSED:" else "FAIL:");
 		print("-".repeat(30));

@@ -1,6 +1,10 @@
+import ceylon.collection {
+	ArrayList
+}
 shared interface Mustache {
 	shared formal String render(Context data);
 	shared default Boolean standalone => true;
+	shared default String variable => "";
 }
 "A Mustache Template
  
@@ -18,7 +22,7 @@ class CommentMustache(shared String comment) satisfies Mustache {
 }
 "HTML escaped variable tag: {{variable}}
  The tag will be substituted with the content of the variable"
-class HtmlMustache(shared String variable) satisfies Mustache {
+class HtmlMustache(shared actual String variable) satisfies Mustache {
 	string => "HTML(``variable``)";
 	shared actual String render(Context data) {
 		if (exists str = data[variable]) {
@@ -47,41 +51,40 @@ class LiteralMustache(shared String text) satisfies Mustache {
  If there is no match it tries to recursively find a value for the variable in the parent context.
  In this case it will search just for 'name'.
  "
-class SectionMustache(shared String variable, shared {Mustache*} childMustaches) satisfies Mustache {
-	string => "SECTION(``variable``: ``",".join(childMustaches)``)";
+shared class SectionMustache(
+	shared actual String variable,
+	shared ArrayList<Mustache> childMustaches,
+	shared Boolean inverted = false) satisfies Mustache {
+	
+	string => "`` inverted then "INVERTED" else "" ``SECTION(``variable``: ``",".join(childMustaches)``)";
 	shared actual String render(Context data) {
-		value item = data[variable];
-		if (is ConstContext item, item.const == false) {
+		if (!inverted) {
+			value item = data[variable];
+			if (is ConstContext item, item.const == false) {
+				return "";
+			}
+			if (is ListContext item, item.empty) {
+				return "";
+			}
+			return "".join {
+				for (element in SectionContext(item else ConstContext(false), data).sequence)
+					"".join(childMustaches*.render(element))
+			};
+		} else {
+			value item = data[variable];
+			if (is ConstContext item, item.const == false) {
+				return "".join(childMustaches*.render(data));
+			}
+			if (is ListContext item, item.empty) {
+				return "".join(childMustaches*.render(data));
+			}
 			return "";
 		}
-		if (is ListContext item, item.empty) {
-			return "";
-		}
-		return "".join {
-			for (element in item?.sequence else [])
-				"".join(childMustaches*.render(element))
-		};
-	}
-}
-"Inverted Section Tag: {{^variable}}List is empty{{/variable}}
- 
- Functionality is the same as the Section Tag but the tag is rendered if the given variable is false or an empty list"
-class InvertedSectionMustache(shared String variable, shared {Mustache*} childMustaches) satisfies Mustache {
-	string => "INVERTED_SECTION(``variable``: ``",".join(childMustaches)``)";
-	shared actual String render(Context data) {
-		value item = data[variable];
-		if (is ConstContext item, item.const == false) {
-			return "".join(childMustaches*.render(data));
-		}
-		if (is ListContext item, item.empty) {
-			return "".join(childMustaches*.render(data));
-		}
-		return "";
 	}
 }
 "Normal variable Tag: {{{variable}}}
  The tag will be substituted with the content of the variable"
-class TextMustache(shared String variable) satisfies Mustache {
+class TextMustache(shared actual String variable) satisfies Mustache {
 	string => "TEXT(``variable``)";
 	render(Context data) => data[variable]?.string else "";
 	standalone => false;
