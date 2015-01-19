@@ -2,7 +2,6 @@ import ceylon.test {
 	test
 }
 import io.mustache.ceylon {
-	findTags,
 	groupTags,
 	stripStandaloneWhitespace,
 	Template,
@@ -12,21 +11,6 @@ import ceylon.json {
 	Object,
 	Array,
 	parse
-}
-
-test
-void testParse() {
-	value tags = findTags("12345 {{! Comment Block! }} 67890");
-	print(tags);
-	print(groupTags(tags));
-}
-String string = "12345
-                    {{! Comment Block! }}   
-                 67890";
-test
-shared void testStripWhitespace() {
-	value tags = stripStandaloneWhitespace(groupTags(findTags(string)));
-	print(tags);
 }
 
 Array retrieveTestsFromSpec(String filename) {
@@ -41,7 +25,7 @@ Array retrieveTestsFromSpec(String filename) {
 
 test
 shared void testSpec() {
-	for (test in retrieveTestsFromSpec("sections")[...4]) {
+	for (test in retrieveTestsFromSpec("sections")) {
 		assert (is Object test);
 		assert (is Object data = test["data"]);
 		value template = test.getString("template");
@@ -71,8 +55,10 @@ shared void testInterpolationSpec() {
 		value template = test.getString("template");
 		value expected = test.getString("expected");
 		value teTemplate = Template(template);
-		value context = asContext(data);
-		value got = teTemplate.render(context);
+		value got = teTemplate.render(asContext(data));
+		if (got == expected) {
+			continue;
+		}
 		print(got == expected then "PASSED:" else "FAIL:");
 		print("-".repeat(30));
 		print(test["desc"]);
@@ -92,12 +78,16 @@ shared void testCommentSpec() {
 		value expected = test.getString("expected");
 		value teTemplate = Template(template);
 		value got = teTemplate.render(asContext());
-		
-		print(got == expected then "PASSED:" else "FAIL:");
 		print("-".repeat(30));
+		if (got == expected) {
+			continue;
+		}
+		print(got == expected then "PASSED:" else "FAIL:");
 		print(test["desc"]);
 		print(teTemplate);
 		print("Template:\n ``template``");
+		print("Expected:\n ``expected``");
+		print("Got:\n ``got``");
 		print("-".repeat(30));
 	}
 }

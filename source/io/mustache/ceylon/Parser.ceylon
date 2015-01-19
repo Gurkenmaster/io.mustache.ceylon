@@ -2,7 +2,7 @@ import ceylon.collection {
 	HashMap,
 	ArrayList
 }
-shared [Mustache*] groupTags([String*] tags) {
+shared [Mustache*] groupTags([<String|PaddedString>*] tags) {
 	value topLevelSection = SectionMustache("", ArrayList<Mustache>());
 	value sectionStack = ArrayList<SectionMustache> { topLevelSection };
 	SectionMustache peek {
@@ -20,7 +20,15 @@ shared [Mustache*] groupTags([String*] tags) {
 	if (tags.empty) {
 		return [];
 	}
-	for (i->tag in tags.indexed) {
+	for (i->element in tags.indexed) {
+		String tag;
+		switch (element)
+		case (is String) {
+			tag = element;
+		}
+		case (is PaddedString) {
+			tag = element[1];
+		}
 		if (tag.startsWith("{{"), tag.endsWith("}}")) {
 			switch (tag[2])
 			case ('{') {
@@ -58,7 +66,13 @@ shared [Mustache*] groupTags([String*] tags) {
 				peek.childMustaches.add(HtmlMustache(variable));
 			}
 		} else {
-			peek.childMustaches.add(LiteralMustache(tag));
+			if (is PaddedString previous = tags[i - 1]) { //"\n..." keep newline
+				peek.childMustaches.add(LiteralMustache(tag[...previous[2]]));
+			} else if (is PaddedString next = tags[i + 1]) { //"...\n" kill newline
+				peek.childMustaches.add(LiteralMustache(tag[next[0] + 1 ...]));
+			} else {
+				peek.childMustaches.add(LiteralMustache(tag));
+			}
 		}
 	}
 	assert (exists first = sectionStack.first);
@@ -67,28 +81,6 @@ shared [Mustache*] groupTags([String*] tags) {
 shared [Mustache*] stripStandaloneWhitespace([Mustache*] mustaches) {
 	value list = ArrayList<Mustache>();
 	list.addAll(mustaches);
-	for (i->element in mustaches.indexed) {
-		if (is SectionMustache element) {
-			value newMustache = SectionMustache(element.variable, ArrayList<Mustache> { *stripStandaloneWhitespace(element.childMustaches.sequence()) });
-			list.set(i, newMustache);
-		}
-		if (!is LiteralMustache element, element.standalone) {
-			if (is LiteralMustache previous = list[i - 1]) {
-				value split = previous.text.split('\n'.equals).last;
-				if (exists split, split.trimmed == "") {
-					list.set(i - 1, LiteralMustache(previous.text[... previous.text.size - split.size - 1]));
-				} else {
-					continue;
-				}
-			}
-			if (is LiteralMustache next = mustaches[i + 1]) {
-				value split = next.text.split('\n'.equals).first;
-				if (exists split, split.trimmed == "") {
-					list.set(i + 1, (LiteralMustache(next.text[split.size + 1 ...])));
-				}
-			}
-		}
-	}
 	return list.sequence();
 }
 Map<Character,String> htmlEscapeCharacters = HashMap {
@@ -100,36 +92,93 @@ Map<Character,String> htmlEscapeCharacters = HashMap {
 String escapeHtml(String html)
 		=> String(expand(html.map((char) => htmlEscapeCharacters[char] else char.string)));
 
-shared [String*] findTags(String template) {
-	value list = ArrayList<String>();
-	variable Integer braces = 0;
-	variable Integer start = -1;
-	variable StringBuilder builder = StringBuilder();
-	for (i->ch in template.indexed) {
-		switch (ch)
-		case ('{') {
-			braces++;
-			if (start == -1) {
-				list.add(builder.string);
-				builder = StringBuilder();
-				start = i;
+shared alias PaddedString => [Integer, String, Integer];
+
+Integer? findOpeningMustache(String str)
+		=> str.firstInclusion("{{");
+
+[Character*] standaloneModifiers = ['#', '/', '&', '!', '^'];
+
+class Parser(String rawTemplate) {
+	value output = ArrayList<String>();
+	variable Boolean trippleMustache = false;
+	variable Integer standaloneCharactersLeft = 0;
+	
+	shared [<String|PaddedString>*] findTags() {
+		variable Integer pos = 0;
+		while (pos < rawTemplate.size) {
+			value consumed = processLine(rawTemplate[pos...]);
+			if (standaloneCharactersLeft > 0) {
+				print("left: ``standaloneCharactersLeft`` but consumed: ``consumed``");
+				standaloneCharactersLeft -= consumed;
+				assert (standaloneCharactersLeft >= 0);
 			}
+			pos += consumed;
 		}
-		case ('}') {
-			braces--;
-			if (braces == 0) {
-				list.add(template[start..i]);
-				start = -1;
-			}
+		if (pos > rawTemplate.size) {
+			print("Consumed too much text");
 		}
-		else {
-			if (start == -1) {
-				builder.append(ch.string);
-			}
-		}
+		return output.sequence();
 	}
-	if (start == -1) {
-		list.add(builder.string);
+	
+	Integer processLine(String line) {
+		if (exists index = findOpeningMustache(line)) {
+			if (exists third = line[index + 2], third == '{') {
+				trippleMustache = true;
+			}
+			value closingTag = trippleMustache then "}}}" else "}}";
+			if (exists closingIndex = line[index + 2 ...].firstInclusion(closingTag)) {
+				trippleMustache = false;
+				//standalone tag or multiple tags
+				variable Boolean standalonePreceeding = false;
+				variable Boolean standaloneSucceeding = false;
+				if (exists preceeding = line[... index - 1].split('\n'.equals).last) {
+					if (preceeding.trimmed == "") {
+						standalonePreceeding = true;
+					}
+				}
+				if (exists succeeding = line[index + 2 + closingTag.size + closingIndex ...].split('\n'.equals).first) {
+					if (succeeding.trimmed == "") {
+						standaloneSucceeding = true;
+					}
+				}
+				value tag = line[index .. index + 1 + closingTag.size + closingIndex];
+				if (standaloneCharactersLeft == 0,
+					standalonePreceeding, standaloneSucceeding,
+					exists third = tag[2], standaloneModifiers.contains(third)) {
+					print("standalone: ``tag``");
+					value beforeTag = line[... index - 1];
+					value lineBreakTillTag = beforeTag.split('\n'.equals).last else beforeTag;
+					output.add(beforeTag[... beforeTag.size - lineBreakTillTag.size - 1]);
+					output.add(tag);
+					value skipTag = line[index + 2 + closingTag.size + closingIndex ...];
+					value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
+					output.add(skipTag[skipTag.size - untilLineBreak.size ...]);
+					return beforeTag.size + tag.size + untilLineBreak.size + 1;
+				} else {
+					print("notstandalone: ``tag``");
+					output.add(line[... index - 1]);
+					output.add(tag);
+					value skipTag = line[index + 2 + closingTag.size + closingIndex ...];
+					if (skipTag.endsWith("\n")) {
+						print("Newline at end");
+					}
+					value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
+					if (exists nextTag = untilLineBreak.firstInclusion("{{")) {
+						//handle multiple tags
+						standaloneCharactersLeft = nextTag;
+						output.add(untilLineBreak[... nextTag - 1]);
+						return line[...index].size + tag.size + nextTag - 1;
+					}
+					print("End of line");
+					output.add(untilLineBreak + "\n");
+					return line[...index].size + tag.size + untilLineBreak.size;
+				}
+			} else {
+				//TODO error handling for unmatched {{
+			}
+		}
+		output.add(line);
+		return line.size;
 	}
-	return list.sequence();
 }
