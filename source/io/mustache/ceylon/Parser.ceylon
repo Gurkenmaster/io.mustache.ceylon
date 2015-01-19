@@ -81,7 +81,7 @@ String escapeHtml(String html)
 Integer? findOpeningMustache(String str)
 		=> str.firstInclusion("{{");
 
-[Character*] standaloneModifiers = ['#', '/', '&', '!', '^'];
+[Character*] standaloneModifiers = ['#', '/', '!', '^'];
 
 class Parser(String rawTemplate) {
 	value output = ArrayList<String>();
