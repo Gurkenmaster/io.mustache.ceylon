@@ -101,7 +101,7 @@ class Parser(String rawTemplate) {
 			pos += consumed;
 		}
 		if (pos > rawTemplate.size) {
-			print("Consumed too much text");
+			print("Consumed too much text: `` rawTemplate.size - pos `` characters too much");
 		}
 		return output.sequence();
 	}
@@ -131,7 +131,6 @@ class Parser(String rawTemplate) {
 				if (standaloneCharactersLeft == 0,
 					standalonePreceeding, standaloneSucceeding,
 					exists third = tag[2], standaloneModifiers.contains(third)) {
-					//print("standalone: ``tag``");
 					value beforeTag = line[... index - 1];
 					value lineBreakTillTag = beforeTag.split('\n'.equals).last else beforeTag;
 					output.add(beforeTag[... beforeTag.size - lineBreakTillTag.size - 1]);
@@ -141,7 +140,6 @@ class Parser(String rawTemplate) {
 					output.add(skipTag[skipTag.size - untilLineBreak.size ...]);
 					return beforeTag.size + tag.size + untilLineBreak.size + 1;
 				} else {
-					//print("notstandalone: ``tag``");
 					output.add(line[... index - 1]);
 					output.add(tag);
 					value skipTag = line[index + 2 + closingTag.size + closingIndex ...];
