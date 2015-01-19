@@ -60,22 +60,12 @@ shared class SectionMustache(
 	shared actual String render(Context data) {
 		if (!inverted) {
 			value item = data[variable];
-			if (is ConstContext item, item.const == false) {
-				return "";
-			}
-			if (is ListContext item, item.empty) {
-				return "";
-			}
 			return "".join {
 				for (element in SectionContext(item else ConstContext(false), data).sequence)
 					"".join(childMustaches*.render(element))
 			};
 		} else {
-			value item = data[variable];
-			if (is ConstContext item, item.const == false) {
-				return "".join(childMustaches*.render(data));
-			}
-			if (is ListContext item, item.empty) {
+			if (exists item = data[variable], item.sequence.empty) {
 				return "".join(childMustaches*.render(data));
 			}
 			return "";
