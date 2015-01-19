@@ -12,12 +12,15 @@ shared abstract class Context(parent)
 	Boolean defines(String key) => false;
 	shared actual default
 	Context? get(String key)
-			=> key == "" then this else parent?.get(key);
+			=> (key == "" || key == ".") then this
+			else parent?.get(key);
 }
 class MapContext(HashMap<String,Context> map, Context? parent = null) extends Context(parent) {
 	string => map.string;
 	sequence => [this];
-	get(String key) => key == "" then this else findDots(key) else parent?.get(key);
+	get(String key) => (key == "" || key == ".") then this
+			else findDots(key)
+			else parent?.get(key);
 	
 	Context? findDots(String key) {
 		if (nonempty split = key.split('.'.equals).sequence()) {
