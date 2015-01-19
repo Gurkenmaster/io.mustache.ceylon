@@ -2,7 +2,7 @@ import ceylon.collection {
 	HashMap,
 	ArrayList
 }
-shared [Mustache*] groupTags([<String|PaddedString>*] tags) {
+shared [Mustache*] groupTags([String*] tags) {
 	value topLevelSection = SectionMustache("", ArrayList<Mustache>());
 	value sectionStack = ArrayList<SectionMustache> { topLevelSection };
 	SectionMustache peek {
@@ -20,15 +20,7 @@ shared [Mustache*] groupTags([<String|PaddedString>*] tags) {
 	if (tags.empty) {
 		return [];
 	}
-	for (i->element in tags.indexed) {
-		String tag;
-		switch (element)
-		case (is String) {
-			tag = element;
-		}
-		case (is PaddedString) {
-			tag = element[1];
-		}
+	for (i->tag in tags.indexed) {
 		if (tag.startsWith("{{"), tag.endsWith("}}")) {
 			switch (tag[2])
 			case ('{') {
@@ -66,13 +58,7 @@ shared [Mustache*] groupTags([<String|PaddedString>*] tags) {
 				peek.childMustaches.add(HtmlMustache(variable));
 			}
 		} else {
-			if (is PaddedString previous = tags[i - 1]) { //"\n..." keep newline
-				peek.childMustaches.add(LiteralMustache(tag[...previous[2]]));
-			} else if (is PaddedString next = tags[i + 1]) { //"...\n" kill newline
-				peek.childMustaches.add(LiteralMustache(tag[next[0] + 1 ...]));
-			} else {
-				peek.childMustaches.add(LiteralMustache(tag));
-			}
+			peek.childMustaches.add(LiteralMustache(tag));
 		}
 	}
 	assert (exists first = sectionStack.first);
@@ -92,8 +78,6 @@ Map<Character,String> htmlEscapeCharacters = HashMap {
 String escapeHtml(String html)
 		=> String(expand(html.map((char) => htmlEscapeCharacters[char] else char.string)));
 
-shared alias PaddedString => [Integer, String, Integer];
-
 Integer? findOpeningMustache(String str)
 		=> str.firstInclusion("{{");
 
@@ -104,14 +88,15 @@ class Parser(String rawTemplate) {
 	variable Boolean trippleMustache = false;
 	variable Integer standaloneCharactersLeft = 0;
 	
-	shared [<String|PaddedString>*] findTags() {
+	shared [<String>*] findTags() {
+		output.clear();
 		variable Integer pos = 0;
 		while (pos < rawTemplate.size) {
 			value consumed = processLine(rawTemplate[pos...]);
 			if (standaloneCharactersLeft > 0) {
-				print("left: ``standaloneCharactersLeft`` but consumed: ``consumed``");
+				//print("left: ``standaloneCharactersLeft`` but consumed: ``consumed``");
 				standaloneCharactersLeft -= consumed;
-				assert (standaloneCharactersLeft >= 0);
+				//assert (standaloneCharactersLeft >= 0);
 			}
 			pos += consumed;
 		}
@@ -146,7 +131,7 @@ class Parser(String rawTemplate) {
 				if (standaloneCharactersLeft == 0,
 					standalonePreceeding, standaloneSucceeding,
 					exists third = tag[2], standaloneModifiers.contains(third)) {
-					print("standalone: ``tag``");
+					//print("standalone: ``tag``");
 					value beforeTag = line[... index - 1];
 					value lineBreakTillTag = beforeTag.split('\n'.equals).last else beforeTag;
 					output.add(beforeTag[... beforeTag.size - lineBreakTillTag.size - 1]);
@@ -156,22 +141,18 @@ class Parser(String rawTemplate) {
 					output.add(skipTag[skipTag.size - untilLineBreak.size ...]);
 					return beforeTag.size + tag.size + untilLineBreak.size + 1;
 				} else {
-					print("notstandalone: ``tag``");
+					//print("notstandalone: ``tag``");
 					output.add(line[... index - 1]);
 					output.add(tag);
 					value skipTag = line[index + 2 + closingTag.size + closingIndex ...];
-					if (skipTag.endsWith("\n")) {
-						print("Newline at end");
-					}
 					value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
 					if (exists nextTag = untilLineBreak.firstInclusion("{{")) {
 						//handle multiple tags
-						standaloneCharactersLeft = nextTag;
+						standaloneCharactersLeft = untilLineBreak.size;
 						output.add(untilLineBreak[... nextTag - 1]);
 						return line[...index].size + tag.size + nextTag - 1;
 					}
-					print("End of line");
-					output.add(untilLineBreak + "\n");
+					output.add(skipTag[...untilLineBreak.size]);
 					return line[...index].size + tag.size + untilLineBreak.size;
 				}
 			} else {

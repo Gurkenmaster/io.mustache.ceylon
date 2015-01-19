@@ -7,8 +7,11 @@ shared abstract class Context(parent)
 		satisfies Correspondence<String,Context> {
 	shared Context? parent;
 	shared formal [Context*] sequence;
-	shared actual default Boolean defines(String key) => false;
-	shared actual default Context? get(String key)
+	
+	shared actual default
+	Boolean defines(String key) => false;
+	shared actual default
+	Context? get(String key)
 			=> key == "" then this else parent?.get(key);
 }
 class MapContext(HashMap<String,Context> map, Context? parent = null) extends Context(parent) {

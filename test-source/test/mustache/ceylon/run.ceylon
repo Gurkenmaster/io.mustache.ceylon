@@ -36,7 +36,7 @@ shared void testSpec() {
 		if (got == expected) {
 			continue;
 		}
-		print(context);
+		//print(context);
 		print(got == expected then "PASSED:" else "FAIL:");
 		print("-".repeat(30));
 		print(test["desc"]);
