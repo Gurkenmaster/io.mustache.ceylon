@@ -89,15 +89,13 @@ Map<Character,String> htmlEscapeCharacters = HashMap {
 String escapeHtml(String html)
 		=> String(expand(html.map((char) => htmlEscapeCharacters[char] else char.string)));
 
-Integer? findOpeningMustache(String str)
-		=> str.firstInclusion("{{");
-
 [Character*] standaloneModifiers = ['#', '/', '!', '^', '>', '='];
 
 class Parser(String rawTemplate) {
 	value output = ArrayList<String>();
 	variable Integer standaloneCharactersLeft = 0;
-	
+	variable String openingDelimiter = "{{";
+	variable String closingDelimiter = "}}";
 	shared [String*] findTags() {
 		output.clear();
 		variable Integer pos = 0;
@@ -117,12 +115,12 @@ class Parser(String rawTemplate) {
 	}
 	
 	Integer processLine(String line) {
-		if (exists index = findOpeningMustache(line)) {
-			value tthird = line[index + 2];
+		if (exists index = line.firstInclusion(openingDelimiter)) {
+			value tthird = line[index + openingDelimiter.size];
 			Boolean trippleMustache = tthird?.equals('{') else false;
 			Boolean partial = tthird?.equals('>') else false;
-			value closingTag = trippleMustache then "}}}" else "}}";
-			if (exists closingIndex = line[index + 2 ...].firstInclusion(closingTag)) {
+			value closingTag = trippleMustache then "}" + closingDelimiter else closingDelimiter;
+			if (exists closingIndex = line[index + openingDelimiter.size ...].firstInclusion(closingTag)) {
 				//standalone tag or multiple tags
 				variable Boolean standalonePreceeding = false;
 				variable Boolean standaloneSucceeding = false;
@@ -146,6 +144,14 @@ class Parser(String rawTemplate) {
 					if (partial) {
 						print("Standalone partial found. Indentation: |``lineBreakTillTag``|");
 						output.add(lineBreakTillTag);
+					}
+					if (third == '=',
+						exists thirdToLast = tag[tag.size - 3],
+						thirdToLast == '=') {
+						value openCloseDelimiters = tag[3 .. tag.size - 4].trimmed.split();
+						openingDelimiter = openCloseDelimiters.first else "{{";
+						closingDelimiter = openCloseDelimiters.last else "}}";
+						print("``openingDelimiter````closingDelimiter``");
 					}
 					output.add(tag);
 					value skipTag = line[index + 2 + closingTag.size + closingIndex ...];
