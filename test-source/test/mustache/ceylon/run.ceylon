@@ -2,8 +2,6 @@ import ceylon.test {
 	test
 }
 import io.mustache.ceylon {
-	groupTags,
-	stripStandaloneWhitespace,
 	Template,
 	asContext
 }
@@ -24,7 +22,57 @@ Array retrieveTestsFromSpec(String filename) {
 }
 
 test
-shared void testSpec() {
+shared void testPartials() {
+	for (test in retrieveTestsFromSpec("partials")) {
+		assert (is Object test);
+		assert (is Object data = test["data"]);
+		assert (is Object partials = test["partials"]);
+		value template = test.getString("template");
+		value expected = test.getString("expected");
+		value teTemplate = Template(template);
+		value context = asContext(data.chain(["partials"->partials]));
+		value got = teTemplate.render(context);
+		if (got == expected) {
+			continue;
+		}
+		print(context);
+		print(got == expected then "PASSED:" else "FAIL:");
+		print("-".repeat(30));
+		print(test["desc"]);
+		print(teTemplate);
+		print("Template:\n ``template``");
+		print("Expected:\n ``expected``");
+		print("Got:\n ``got``");
+		print("-".repeat(30));
+	}
+}
+
+test
+shared void testInverted() {
+	for (test in retrieveTestsFromSpec("inverted")) {
+		assert (is Object test);
+		assert (is Object data = test["data"]);
+		value template = test.getString("template");
+		value expected = test.getString("expected");
+		value teTemplate = Template(template);
+		value context = asContext(data);
+		value got = teTemplate.render(context);
+		if (got == expected) {
+			continue;
+		}
+		//print(context);
+		print(got == expected then "PASSED:" else "FAIL:");
+		print("-".repeat(30));
+		print(test["desc"]);
+		print(teTemplate);
+		print("Template:\n ``template``");
+		print("Expected:\n ``expected``");
+		print("Got:\n ``got``");
+		print("-".repeat(30));
+	}
+}
+test
+shared void testSections() {
 	for (test in retrieveTestsFromSpec("sections")) {
 		assert (is Object test);
 		assert (is Object data = test["data"]);

@@ -79,3 +79,8 @@ class TextMustache(shared actual String variable) satisfies Mustache {
 	render(Context data) => data[variable]?.string else "";
 	standalone => false;
 }
+
+class PartialMustache(shared actual String variable, shared String indentation = "") satisfies Mustache {
+	string => "PARTIAL(``variable``)";
+	render(Context data) => "\n".join(Template(data["partials." + variable]?.string else "").render(data).split('\n'.equals).map((String element) => indentation + element));
+}

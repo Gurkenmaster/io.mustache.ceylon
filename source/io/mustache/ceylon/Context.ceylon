@@ -1,7 +1,12 @@
 import ceylon.collection {
 	HashMap
 }
-shared alias PrimitiveData => Integer|Float|Boolean|String;
+
+shared object emptyContext extends Context(null) {
+	sequence => [];
+	string => "";
+	get(String key) => this;
+}
 
 shared abstract class Context(parent)
 		satisfies Correspondence<String,Context> {
@@ -18,13 +23,18 @@ shared abstract class Context(parent)
 class MapContext(HashMap<String,Context> map, Context? parent = null) extends Context(parent) {
 	string => map.string;
 	sequence => [this];
+	defines(String key) => map.defines(key);
 	get(String key) => (key == "" || key == ".") then this
 			else findDots(key)
 			else parent?.get(key);
 	
 	Context? findDots(String key) {
 		if (nonempty split = key.split('.'.equals).sequence()) {
-			return map[key[... split.first.size - 1]]?.get(key[split.first.size + 1 ...]);
+			value first = key[... split.first.size - 1];
+			if (!defines(first)) {
+				return emptyContext;
+			}
+			return map[first]?.get(key[split.first.size + 1 ...]);
 		}
 		return map[key];
 	}
@@ -43,6 +53,7 @@ class ConstContext(shared PrimitiveData const, Context? parent = null) extends C
 	string => const.string;
 	sequence => const == false then [] else [this];
 }
+shared alias PrimitiveData => Integer|Float|Boolean|String;
 shared alias ComplexType => PrimitiveData|{<String->Anything>*}|List<Anything>;
 
 shared Context asContext(ComplexType entries = {}, Context? parent = null) {
@@ -52,14 +63,14 @@ shared Context asContext(ComplexType entries = {}, Context? parent = null) {
 	if (is {<String->Anything>*} entries) {
 		value hashmap = HashMap<String,Context>();
 		value context = MapContext(hashmap, parent);
-		hashmap.putAll(HashMap<String,Anything> { *entries }.mapItems((String key, Anything item) {
+		hashmap.putAll(HashMap<String,Anything> { *entries }.mapItems((key, item) {
 					assert (is ComplexType item);
 					return asContext(item, context);
 				}));
 		return context;
 	}
 	if (is List<Anything> entries) {
-		return ListContext(entries.map((Anything element) {
+		return ListContext(entries.map((element) {
 					assert (is ComplexType element);
 					return asContext(element, parent);
 				}).sequence(), parent);

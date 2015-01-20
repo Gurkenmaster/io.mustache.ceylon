@@ -53,6 +53,17 @@ shared [Mustache*] groupTags([String*] tags) {
 				peek.childMustaches.add(sectionMustache);
 				push(sectionMustache);
 			}
+			case ('>') {
+				value variable = tag[3 .. tag.size - 3].trimmed;
+				value list = peek.childMustaches;
+				if (is LiteralMustache precedingText = list.last, precedingText.text.trimmed == "") {
+					print("Indentation: |``precedingText.text``|");
+					peek.childMustaches.add(PartialMustache(variable, precedingText.text));
+					peek.childMustaches.removeLast(precedingText);
+				} else {
+					peek.childMustaches.add(PartialMustache(variable));
+				}
+			}
 			else {
 				value variable = tag[2 .. tag.size - 3].trimmed;
 				peek.childMustaches.add(HtmlMustache(variable));
@@ -81,11 +92,10 @@ String escapeHtml(String html)
 Integer? findOpeningMustache(String str)
 		=> str.firstInclusion("{{");
 
-[Character*] standaloneModifiers = ['#', '/', '!', '^'];
+[Character*] standaloneModifiers = ['#', '/', '!', '^', '>'];
 
 class Parser(String rawTemplate) {
 	value output = ArrayList<String>();
-	variable Boolean trippleMustache = false;
 	variable Integer standaloneCharactersLeft = 0;
 	
 	shared [<String>*] findTags() {
@@ -107,9 +117,16 @@ class Parser(String rawTemplate) {
 	}
 	
 	Integer processLine(String line) {
+	variable Boolean trippleMustache = false;
+		variable Boolean partial = false;
 		if (exists index = findOpeningMustache(line)) {
-			if (exists third = line[index + 2], third == '{') {
-				trippleMustache = true;
+			if (exists third = line[index + 2]) {
+				if (third == '{') {
+					trippleMustache = true;
+				}
+				if (third == '>') {
+					partial = true;
+				}
 			}
 			value closingTag = trippleMustache then "}}}" else "}}";
 			if (exists closingIndex = line[index + 2 ...].firstInclusion(closingTag)) {
@@ -131,9 +148,16 @@ class Parser(String rawTemplate) {
 				if (standaloneCharactersLeft == 0,
 					standalonePreceeding, standaloneSucceeding,
 					exists third = tag[2], standaloneModifiers.contains(third)) {
+					
+					
 					value beforeTag = line[... index - 1];
 					value lineBreakTillTag = beforeTag.split('\n'.equals).last else beforeTag;
-					output.add(beforeTag[... beforeTag.size - lineBreakTillTag.size - 1]);
+					value before = beforeTag[... beforeTag.size - lineBreakTillTag.size - 1];
+					output.add(before);
+					if(partial) {
+						print("Standalone partial found. Indentation: |``lineBreakTillTag``|");
+						output.add(lineBreakTillTag);
+					}
 					output.add(tag);
 					value skipTag = line[index + 2 + closingTag.size + closingIndex ...];
 					value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
