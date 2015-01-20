@@ -92,13 +92,13 @@ String escapeHtml(String html)
 Integer? findOpeningMustache(String str)
 		=> str.firstInclusion("{{");
 
-[Character*] standaloneModifiers = ['#', '/', '!', '^', '>'];
+[Character*] standaloneModifiers = ['#', '/', '!', '^', '>', '='];
 
 class Parser(String rawTemplate) {
 	value output = ArrayList<String>();
 	variable Integer standaloneCharactersLeft = 0;
 	
-	shared [<String>*] findTags() {
+	shared [String*] findTags() {
 		output.clear();
 		variable Integer pos = 0;
 		while (pos < rawTemplate.size) {
@@ -117,44 +117,33 @@ class Parser(String rawTemplate) {
 	}
 	
 	Integer processLine(String line) {
-	variable Boolean trippleMustache = false;
-		variable Boolean partial = false;
 		if (exists index = findOpeningMustache(line)) {
-			if (exists third = line[index + 2]) {
-				if (third == '{') {
-					trippleMustache = true;
-				}
-				if (third == '>') {
-					partial = true;
-				}
-			}
+			value tthird = line[index + 2];
+			Boolean trippleMustache = tthird?.equals('{') else false;
+			Boolean partial = tthird?.equals('>') else false;
 			value closingTag = trippleMustache then "}}}" else "}}";
 			if (exists closingIndex = line[index + 2 ...].firstInclusion(closingTag)) {
-				trippleMustache = false;
 				//standalone tag or multiple tags
 				variable Boolean standalonePreceeding = false;
 				variable Boolean standaloneSucceeding = false;
-				if (exists preceeding = line[... index - 1].split('\n'.equals).last) {
-					if (preceeding.trimmed == "") {
-						standalonePreceeding = true;
-					}
+				if (exists preceeding = line[... index - 1].split('\n'.equals).last,
+					preceeding.trimmed == "") {
+					standalonePreceeding = true;
 				}
-				if (exists succeeding = line[index + 2 + closingTag.size + closingIndex ...].split('\n'.equals).first) {
-					if (succeeding.trimmed == "") {
-						standaloneSucceeding = true;
-					}
+				if (exists succeeding = line[index + 2 + closingTag.size + closingIndex ...].split('\n'.equals).first,
+					succeeding.trimmed == "") {
+					standaloneSucceeding = true;
 				}
 				value tag = line[index .. index + 1 + closingTag.size + closingIndex];
 				if (standaloneCharactersLeft == 0,
 					standalonePreceeding, standaloneSucceeding,
 					exists third = tag[2], standaloneModifiers.contains(third)) {
 					
-					
 					value beforeTag = line[... index - 1];
 					value lineBreakTillTag = beforeTag.split('\n'.equals).last else beforeTag;
 					value before = beforeTag[... beforeTag.size - lineBreakTillTag.size - 1];
 					output.add(before);
-					if(partial) {
+					if (partial) {
 						print("Standalone partial found. Indentation: |``lineBreakTillTag``|");
 						output.add(lineBreakTillTag);
 					}

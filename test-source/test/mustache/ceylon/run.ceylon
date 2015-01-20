@@ -22,6 +22,30 @@ Array retrieveTestsFromSpec(String filename) {
 }
 
 test
+shared void testDelimiters() {
+	for (test in retrieveTestsFromSpec("delimiters")) {
+		assert (is Object test);
+		assert (is Object data = test["data"]);
+		value template = test.getString("template");
+		value expected = test.getString("expected");
+		value teTemplate = Template(template);
+		value context = asContext(data);
+		value got = teTemplate.render(context);
+		if (got == expected) {
+			continue;
+		}
+		print(context);
+		print(got == expected then "PASSED:" else "FAIL:");
+		print("-".repeat(30));
+		print(test["desc"]);
+		print(teTemplate);
+		print("Template:\n ``template``");
+		print("Expected:\n ``expected``");
+		print("Got:\n ``got``");
+		print("-".repeat(30));
+	}
+}
+test
 shared void testPartials() {
 	for (test in retrieveTestsFromSpec("partials")) {
 		assert (is Object test);
