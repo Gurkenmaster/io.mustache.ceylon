@@ -156,14 +156,13 @@ class Parser(String rawTemplate) {
 				
 				value skipTag = line[tagEndIndex + 1 ...];
 				value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
+				value beforeTag = line[... index - 1];
 				if (standaloneCharactersLeft == 0,
 					standalonePreceeding, standaloneSucceeding,
-					exists third = tag[2], standaloneModifiers.contains(third)) {
+					exists third = mustacheyTag[2], standaloneModifiers.contains(third)) {
 					
-					value beforeTag = line[... index - 1];
 					value lineBreakTillTag = beforeTag.split('\n'.equals).last else beforeTag;
-					value before = beforeTag[... beforeTag.size - lineBreakTillTag.size - 1];
-					output.add(before);
+					output.add(beforeTag[... beforeTag.size - lineBreakTillTag.size - 1]);
 					if (partial) {
 						print("Standalone partial found. Indentation: |``lineBreakTillTag``|");
 						output.add(lineBreakTillTag);
@@ -171,18 +170,18 @@ class Parser(String rawTemplate) {
 					output.add(mustacheyTag);
 					output.add(skipTag[skipTag.size - untilLineBreak.size ...]);
 					return beforeTag.size + tag.size + untilLineBreak.size + 1;
-				} else {
-					output.add(line[... index - 1]);
-					output.add(mustacheyTag);
-					if (exists nextTag = untilLineBreak.firstInclusion(openingDelimiter)) {
-						//handle multiple tags
-						standaloneCharactersLeft = untilLineBreak.size;
-						output.add(untilLineBreak[... nextTag - 1]);
-						return line[...index].size + tag.size + nextTag - 1;
-					}
-					output.add(skipTag[...untilLineBreak.size]);
-					return line[...index].size + tag.size + untilLineBreak.size;
 				}
+				//not standalone, possibly multiple tags
+				output.add(beforeTag);
+				output.add(mustacheyTag);
+				if (exists nextTag = untilLineBreak.firstInclusion(openingDelimiter)) {
+					//handle multiple tags
+					standaloneCharactersLeft = untilLineBreak.size;
+					output.add(untilLineBreak[... nextTag - 1]);
+					return line[...index].size + tag.size + nextTag - 1;
+				}
+				output.add(skipTag[...untilLineBreak.size]);
+				return line[...index].size + tag.size + untilLineBreak.size;
 			} else {
 				//TODO error handling for unmatched {{
 			}
