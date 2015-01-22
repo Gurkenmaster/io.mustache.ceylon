@@ -6,7 +6,7 @@ shared [Mustache*] groupTags([String*] tags) {
 	value topLevelSection = SectionMustache("", ArrayList<Mustache>());
 	value sectionStack = ArrayList<SectionMustache> { topLevelSection };
 	SectionMustache peek {
-		"Stack empty"
+		"The Stack is empty"
 		assert (exists last = sectionStack.last);
 		return last;
 	}
@@ -103,9 +103,7 @@ class Parser(String rawTemplate) {
 		while (pos < rawTemplate.size) {
 			value consumed = processLine(rawTemplate[pos...]);
 			if (standaloneCharactersLeft > 0) {
-				//print("left: ``standaloneCharactersLeft`` but consumed: ``consumed``");
 				standaloneCharactersLeft -= consumed;
-				//assert (standaloneCharactersLeft >= 0);
 			}
 			pos += consumed;
 		}
@@ -126,6 +124,7 @@ class Parser(String rawTemplate) {
 		}
 	}
 	
+	"Replaces custom delimiters with the default mustached delimiters {{ and }}"
 	String mustachefy(String tag)
 			=> tag.replaceFirst(openingDelimiter, dOpen).replaceLast(closingDelimiter, dClose);
 	
@@ -139,24 +138,17 @@ class Parser(String rawTemplate) {
 				//standalone tag or multiple tags
 				value offset = openingDelimiter.size == 2 && closingDelimiter.size == 2 then 1 else 0;
 				value tagEndIndex = index + offset + closingTag.size + closingIndex; //custom delimiter messes this line up
-				variable Boolean standalonePreceeding = false;
-				variable Boolean standaloneSucceeding = false;
-				if (exists preceeding = line[... index - 1].split('\n'.equals).last,
-					preceeding.trimmed == "") {
-					standalonePreceeding = true;
-				}
-				if (exists succeeding = line[tagEndIndex + 1 ...].split('\n'.equals).first,
-					succeeding.trimmed == "") {
-					standaloneSucceeding = true;
-				}
+				
+				value beforeTag = line[... index - 1];
+				value afterTag = line[tagEndIndex + 1 ...];
+				Boolean standalonePreceeding = beforeTag.split('\n'.equals).last?.trimmed?.equals("") else false;
+				Boolean standaloneSucceeding = afterTag.split('\n'.equals).first?.trimmed?.equals("") else false;
 				value tag = line[index..tagEndIndex];
 				value mustacheyTag = mustachefy(tag);
 				
 				checkDelimiter(mustacheyTag, tag);
 				
-				value skipTag = line[tagEndIndex + 1 ...];
-				value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
-				value beforeTag = line[... index - 1];
+				value untilLineBreak = afterTag.split('\n'.equals).first else afterTag;
 				if (standaloneCharactersLeft == 0,
 					standalonePreceeding, standaloneSucceeding,
 					exists third = mustacheyTag[2], standaloneModifiers.contains(third)) {
@@ -168,7 +160,7 @@ class Parser(String rawTemplate) {
 						output.add(lineBreakTillTag);
 					}
 					output.add(mustacheyTag);
-					output.add(skipTag[skipTag.size - untilLineBreak.size ...]);
+					output.add(afterTag[afterTag.size - untilLineBreak.size ...]);
 					return beforeTag.size + tag.size + untilLineBreak.size + 1;
 				}
 				//not standalone, possibly multiple tags
@@ -180,7 +172,7 @@ class Parser(String rawTemplate) {
 					output.add(untilLineBreak[... nextTag - 1]);
 					return line[...index].size + tag.size + nextTag - 1;
 				}
-				output.add(skipTag[...untilLineBreak.size]);
+				output.add(afterTag[...untilLineBreak.size]);
 				return line[...index].size + tag.size + untilLineBreak.size;
 			} else {
 				//TODO error handling for unmatched {{
