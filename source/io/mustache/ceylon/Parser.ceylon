@@ -87,10 +87,16 @@ String escapeHtml(String html)
 [Character*] standaloneModifiers = ['#', '/', '!', '^', '>', '='];
 
 class Parser(String rawTemplate) {
+	
+	"Default opening delimiter"
+	value dOpen = "{{";
+	"Default closing delimiter"
+	value dClose = "}}";
+	
 	value output = ArrayList<String>();
 	variable Integer standaloneCharactersLeft = 0;
-	variable String openingDelimiter = "{{";
-	variable String closingDelimiter = "}}";
+	variable String openingDelimiter = dOpen;
+	variable String closingDelimiter = dClose;
 	shared [String*] findTags() {
 		output.clear();
 		variable Integer pos = 0;
@@ -109,6 +115,20 @@ class Parser(String rawTemplate) {
 		return output.sequence();
 	}
 	
+	void checkDelimiter(String mustacheyTag, String tag) {
+		if (exists third = mustacheyTag[2],
+			third == '=',
+			exists thirdToLast = mustacheyTag[tag.size - 3],
+			thirdToLast == '=') {
+			value openCloseDelimiters = mustacheyTag[3 .. tag.size - 4].trimmed.split();
+			openingDelimiter = openCloseDelimiters.first else dOpen;
+			closingDelimiter = openCloseDelimiters.last else dClose;
+		}
+	}
+	
+	String mustachefy(String tag)
+			=> tag.replaceFirst(openingDelimiter, dOpen).replaceLast(closingDelimiter, dClose);
+	
 	Integer processLine(String line) {
 		if (exists index = line.firstInclusion(openingDelimiter)) {
 			value tthird = line[index + openingDelimiter.size];
@@ -118,7 +138,7 @@ class Parser(String rawTemplate) {
 			if (exists closingIndex = line[index + closingTag.size ...].firstInclusion(closingTag)) {
 				//standalone tag or multiple tags
 				value offset = openingDelimiter.size == 2 && closingDelimiter.size == 2 then 1 else 0;
-				value tagEndIndex = index + offset + closingTag.size + closingIndex;//custom delimiter messes this line up
+				value tagEndIndex = index + offset + closingTag.size + closingIndex; //custom delimiter messes this line up
 				variable Boolean standalonePreceeding = false;
 				variable Boolean standaloneSucceeding = false;
 				if (exists preceeding = line[... index - 1].split('\n'.equals).last,
@@ -130,15 +150,12 @@ class Parser(String rawTemplate) {
 					standaloneSucceeding = true;
 				}
 				value tag = line[index..tagEndIndex];
-				value mustacheyTag = tag.replaceFirst(openingDelimiter, "{{").replaceLast(closingDelimiter, "}}");
-				if (exists third = mustacheyTag[2],
-					third == '=',
-					exists thirdToLast = mustacheyTag[tag.size - 3],
-					thirdToLast == '=') {
-					value openCloseDelimiters = mustacheyTag[3 .. tag.size - 4].trimmed.split();
-					openingDelimiter = openCloseDelimiters.first else "{{";
-					closingDelimiter = openCloseDelimiters.last else "}}";
-				}
+				value mustacheyTag = mustachefy(tag);
+				
+				checkDelimiter(mustacheyTag, tag);
+				
+				value skipTag = line[tagEndIndex + 1 ...];
+				value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
 				if (standaloneCharactersLeft == 0,
 					standalonePreceeding, standaloneSucceeding,
 					exists third = tag[2], standaloneModifiers.contains(third)) {
@@ -152,15 +169,11 @@ class Parser(String rawTemplate) {
 						output.add(lineBreakTillTag);
 					}
 					output.add(mustacheyTag);
-					value skipTag = line[tagEndIndex + 1 ...];
-					value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
 					output.add(skipTag[skipTag.size - untilLineBreak.size ...]);
 					return beforeTag.size + tag.size + untilLineBreak.size + 1;
 				} else {
 					output.add(line[... index - 1]);
 					output.add(mustacheyTag);
-					value skipTag = line[tagEndIndex + 1 ...];
-					value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
 					if (exists nextTag = untilLineBreak.firstInclusion(openingDelimiter)) {
 						//handle multiple tags
 						standaloneCharactersLeft = untilLineBreak.size;
