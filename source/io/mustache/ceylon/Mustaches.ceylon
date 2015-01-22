@@ -10,7 +10,7 @@ shared interface Mustache {
  
  Parses the given string template and offers the method template.render(context) to render all tags"
 shared class Template(shared String template) satisfies Mustache {
-	shared {Mustache*} childMustaches = stripStandaloneWhitespace(groupTags(Parser(template).findTags()));
+	shared {Mustache*} childMustaches = groupTags(Parser(template).findTags());
 	render(Context data) => "".join(childMustaches*.render(data));
 	string => "".join(childMustaches);
 }
@@ -64,12 +64,10 @@ shared class SectionMustache(
 				for (element in SectionContext(item else ConstContext(false), data).sequence)
 					"".join(childMustaches*.render(element))
 			};
-		} else {
-			if (exists item = data[variable], item.sequence.empty) {
-				return "".join(childMustaches*.render(data));
-			}
-			return "";
+		} else if (exists item = data[variable], item.sequence.empty) {
+			return "".join(childMustaches*.render(data));
 		}
+		return "";
 	}
 }
 "Normal variable Tag: {{{variable}}}

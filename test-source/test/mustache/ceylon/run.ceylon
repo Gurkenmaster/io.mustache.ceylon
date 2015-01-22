@@ -28,8 +28,9 @@ shared void testDelimiters() {
 		assert (is Object data = test["data"]);
 		value template = test.getString("template");
 		value expected = test.getString("expected");
+		value partials = test["partials"] else {};
 		value teTemplate = Template(template);
-		value context = asContext(data);
+		value context = asContext(data.chain{"partials"->partials});
 		value got = teTemplate.render(context);
 		if (got == expected) {
 			continue;
