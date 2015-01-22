@@ -120,7 +120,7 @@ class Parser(String rawTemplate) {
 			Boolean trippleMustache = tthird?.equals('{') else false;
 			Boolean partial = tthird?.equals('>') else false;
 			value closingTag = trippleMustache then "}" + closingDelimiter else closingDelimiter;
-			if (exists closingIndex = line[index + openingDelimiter.size ...].firstInclusion(closingTag)) {
+			if (exists closingIndex = line[index ...].firstInclusion(closingTag)) {
 				//standalone tag or multiple tags
 				variable Boolean standalonePreceeding = false;
 				variable Boolean standaloneSucceeding = false;
@@ -128,11 +128,20 @@ class Parser(String rawTemplate) {
 					preceeding.trimmed == "") {
 					standalonePreceeding = true;
 				}
-				if (exists succeeding = line[index + 2 + closingTag.size + closingIndex ...].split('\n'.equals).first,
+				if (exists succeeding = line[index + 2 + closingIndex ...].split('\n'.equals).first,
 					succeeding.trimmed == "") {
 					standaloneSucceeding = true;
 				}
-				value tag = line[index .. index + 1 + closingTag.size + closingIndex];
+				value tag = line[index .. index + 1 + closingIndex];
+				if (exists third = tag[2], third == '=',
+			        exists thirdToLast = tag[tag.size - 3],
+				    thirdToLast == '=') {
+					
+					value openCloseDelimiters = tag[3 .. tag.size - 4].trimmed.split();
+					openingDelimiter = openCloseDelimiters.first else "{{";
+					closingDelimiter = openCloseDelimiters.last else "}}";
+					print("``openingDelimiter````closingDelimiter``");
+				}
 				if (standaloneCharactersLeft == 0,
 					standalonePreceeding, standaloneSucceeding,
 					exists third = tag[2], standaloneModifiers.contains(third)) {
@@ -145,25 +154,17 @@ class Parser(String rawTemplate) {
 						print("Standalone partial found. Indentation: |``lineBreakTillTag``|");
 						output.add(lineBreakTillTag);
 					}
-					if (third == '=',
-						exists thirdToLast = tag[tag.size - 3],
-						thirdToLast == '=') {
-						value openCloseDelimiters = tag[3 .. tag.size - 4].trimmed.split();
-						openingDelimiter = openCloseDelimiters.first else "{{";
-						closingDelimiter = openCloseDelimiters.last else "}}";
-						print("``openingDelimiter````closingDelimiter``");
-					}
 					output.add(tag);
-					value skipTag = line[index + 2 + closingTag.size + closingIndex ...];
+					value skipTag = line[index + 2 + closingIndex ...];
 					value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
 					output.add(skipTag[skipTag.size - untilLineBreak.size ...]);
 					return beforeTag.size + tag.size + untilLineBreak.size + 1;
 				} else {
 					output.add(line[... index - 1]);
 					output.add(tag);
-					value skipTag = line[index + 2 + closingTag.size + closingIndex ...];
+					value skipTag = line[index + 2 + closingIndex ...];
 					value untilLineBreak = skipTag.split('\n'.equals).first else skipTag;
-					if (exists nextTag = untilLineBreak.firstInclusion("{{")) {
+					if (exists nextTag = untilLineBreak.firstInclusion(openingDelimiter)) {
 						//handle multiple tags
 						standaloneCharactersLeft = untilLineBreak.size;
 						output.add(untilLineBreak[... nextTag - 1]);
