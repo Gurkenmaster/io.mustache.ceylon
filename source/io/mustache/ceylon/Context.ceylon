@@ -31,7 +31,7 @@ class MapContext(HashMap<String,Context> map, Context? parent = null) extends Co
 	Context? findDots(String key) {
 		if (nonempty split = key.split('.'.equals).sequence(), split.size > 1) {
 			value first = key[... split.first.size - 1];
-			if (!defines(first)) {
+			if (!defines(first) && first != "partials") {
 				return emptyContext;
 			}
 			return map[first]?.get(key[split.first.size + 1 ...]);
