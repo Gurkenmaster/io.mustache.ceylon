@@ -136,7 +136,7 @@ class Parser(String rawTemplate) {
 			value closingTag = trippleMustache then "}" + closingDelimiter else closingDelimiter;
 			if (exists closingIndex = line[index + closingTag.size ...].firstInclusion(closingTag)) {
 				//standalone tag or multiple tags
-				value offset = openingDelimiter.size == 2 && closingDelimiter.size == 2 then 1 else 0;
+				value offset = closingTag.size - 1;
 				value tagEndIndex = index + offset + closingTag.size + closingIndex; //custom delimiter messes this line up
 				
 				value beforeTag = line[... index - 1];
