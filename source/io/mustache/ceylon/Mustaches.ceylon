@@ -6,14 +6,25 @@ shared interface Mustache {
 	shared default Boolean standalone => true;
 	shared default String variable => "";
 }
+
 "A Mustache Template
- 
  Parses the given string template and offers the method template.render(context) to render all tags"
 shared class Template(shared String template) satisfies Mustache {
-	shared {Mustache*} childMustaches = groupTags(Parser(template).findTags());
-	render(Context data) => "".join(childMustaches*.render(data));
+	Boolean carriageReturnLineFeed = template.contains("\r\n");
+	shared {Mustache*} childMustaches = groupTags(Parser(carriageReturnLineFeed
+					then template.replace("\r\n", "\n")
+					else template
+		).findTags());
+	render(Context data) => carriageReturnLineFeed
+			then renderAll(childMustaches, data).replace("\n", "\r\n")
+			else renderAll(childMustaches, data);
+	
 	string => "".join(childMustaches);
 }
+
+String renderAll({Mustache*} children, Context data)
+		=> "".join(children*.render(data));
+
 "{{! Comment}}
  This tag is simply ignored"
 class CommentMustache(shared String comment) satisfies Mustache {
@@ -21,7 +32,7 @@ class CommentMustache(shared String comment) satisfies Mustache {
 	string => "COMMENT(``comment``)";
 }
 "HTML escaped variable tag: {{variable}}
- The tag will be substituted with the content of the variable"
+ The tag will be substituted with the html escaped content of the variable"
 class HtmlMustache(shared actual String variable) satisfies Mustache {
 	string => "HTML(``variable``)";
 	shared actual String render(Context data) {
@@ -50,6 +61,8 @@ class LiteralMustache(shared String text) satisfies Mustache {
  Would first try to find it in 'people.name'. 
  If there is no match it tries to recursively find a value for the variable in the parent context.
  In this case it will search just for 'name'.
+ 
+ The section tag can be inverted. That means it will only render if the variable points to false, an empty list.
  "
 shared class SectionMustache(
 	shared actual String variable,
@@ -62,10 +75,10 @@ shared class SectionMustache(
 			value item = data[variable];
 			return "".join {
 				for (element in SectionContext(item else ConstContext(false), data).sequence)
-					"".join(childMustaches*.render(element))
+					renderAll(childMustaches, element)
 			};
 		} else if (exists item = data[variable], item.sequence.empty) {
-			return "".join(childMustaches*.render(data));
+			return renderAll(childMustaches, data);
 		}
 		return "";
 	}
@@ -78,7 +91,10 @@ class TextMustache(shared actual String variable) satisfies Mustache {
 	standalone => false;
 }
 
+"Partial Mustache: {{>hello}}
+ If the Mustache is indented: every line of the partial template will be indented"
 class PartialMustache(shared actual String variable, shared String indentation = "") satisfies Mustache {
 	string => "PARTIAL(``variable``)";
-	render(Context data) => "\n".join(Template(data["partials." + variable]?.string else "").render(data).split('\n'.equals).map((String element) => indentation + element));
+	render(Context data) => "\n".join(Template(data["partials." + variable]?.string else "")
+		.render(data).split('\n'.equals).map((String element) => indentation + element));
 }
