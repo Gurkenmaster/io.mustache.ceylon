@@ -57,7 +57,6 @@ shared [Mustache*] groupTags([String*] tags) {
 				value variable = tag[3 .. tag.size - 3].trimmed;
 				value list = peek.childMustaches;
 				if (is LiteralMustache precedingText = list.last, precedingText.text.trimmed == "") {
-					print("Indentation: |``precedingText.text``|");
 					peek.childMustaches.add(PartialMustache(variable, precedingText.text));
 					peek.childMustaches.removeLast(precedingText);
 				} else {
@@ -107,9 +106,6 @@ class Parser(String rawTemplate) {
 			}
 			pos += consumed;
 		}
-		if (pos > rawTemplate.size) {
-			print("Consumed too much text: `` rawTemplate.size - pos `` characters too much");
-		}
 		return output.sequence();
 	}
 	
@@ -156,7 +152,6 @@ class Parser(String rawTemplate) {
 					value lineBreakTillTag = beforeTag.split('\n'.equals).last else beforeTag;
 					output.add(beforeTag[... beforeTag.size - lineBreakTillTag.size - 1]);
 					if (partial) {
-						print("Standalone partial found. Indentation: |``lineBreakTillTag``|");
 						output.add(lineBreakTillTag);
 					}
 					output.add(mustacheyTag);

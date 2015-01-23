@@ -29,7 +29,7 @@ class MapContext(HashMap<String,Context> map, Context? parent = null) extends Co
 			else parent?.get(key);
 	
 	Context? findDots(String key) {
-		if (nonempty split = key.split('.'.equals).sequence()) {
+		if (nonempty split = key.split('.'.equals).sequence(), split.size > 1) {
 			value first = key[... split.first.size - 1];
 			if (!defines(first)) {
 				return emptyContext;
