@@ -77,7 +77,7 @@ shared class SectionMustache(
 				for (element in SectionContext(item else ConstContext(false), data).sequence)
 					renderAll(childMustaches, element)
 			};
-		} else if (exists item = data[variable], item.sequence.empty) {
+		} else if (data[variable]?.sequence?.empty else true) {
 			return renderAll(childMustaches, data);
 		}
 		return "";
