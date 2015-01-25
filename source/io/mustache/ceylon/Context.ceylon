@@ -54,7 +54,7 @@ class ConstContext(shared PrimitiveData const, Context? parent = null) extends C
 	sequence => const == false then [] else [this];
 }
 shared alias PrimitiveData => Integer|Float|Boolean|String;
-shared alias ComplexType => PrimitiveData|{<String->Anything>*}|List<Anything>;
+shared alias ComplexType => PrimitiveData|{<String->Anything>*}|{Anything*};
 
 shared Context asContext(ComplexType entries = {}, Context? parent = null) {
 	if (is PrimitiveData entries) {
@@ -69,7 +69,7 @@ shared Context asContext(ComplexType entries = {}, Context? parent = null) {
 				}));
 		return context;
 	}
-	if (is List<Anything> entries) {
+	if (is {Anything*} entries) {
 		return ListContext(entries.map((element) {
 					assert (is ComplexType element);
 					return asContext(element, parent);
