@@ -20,6 +20,6 @@ import io.mustache.ceylon {
 }
 
 shared void run() {
-  print(Template("{{var}}").render(asContext({"var"->"Hello World"});
+  print(Template("{{var}}").render(asContext({"var"->"Hello World"})));
 }
 ```
