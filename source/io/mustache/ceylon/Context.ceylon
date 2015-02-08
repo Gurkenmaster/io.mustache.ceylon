@@ -60,19 +60,23 @@ shared Context asContext(ComplexType entries = {}, Context? parent = null) {
 	if (is PrimitiveData entries) {
 		return ConstContext(entries, parent);
 	}
-	if (is {<String->Anything>*} entries) {
+	if (is {<String->Anything>+} entries) {
 		value hashmap = HashMap<String,Context>();
 		value context = MapContext(hashmap, parent);
-		hashmap.putAll(HashMap<String,Anything> { *entries }.mapItems((key, item) {
-					assert (is ComplexType item);
-					return asContext(item, context);
+		hashmap.putAll(entries.flatMap((entry) {
+					if (is ComplexType item = entry.item) {
+						return [entry.key->asContext(item, context)];
+					}
+					return [];
 				}));
 		return context;
 	}
 	if (is {Anything*} entries) {
-		return ListContext(entries.map((element) {
-					assert (is ComplexType element);
-					return asContext(element, parent);
+		return ListContext(entries.flatMap((element) {
+					if (is ComplexType element) {
+						return [asContext(element, parent)];
+					}
+					return [];
 				}).sequence(), parent);
 	}
 	return ConstContext(false, parent);
