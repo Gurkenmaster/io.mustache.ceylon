@@ -74,7 +74,7 @@ shared class SectionMustache(
 		if (!inverted) {
 			value item = data[variable];
 			return "".join {
-				for (element in SectionContext(item else ConstContext(false), data).sequence)
+				for (element in SectionContext(item else emptyContext, data).sequence)
 					renderAll(childMustaches, element)
 			};
 		} else if (data[variable]?.sequence?.empty else true) {
@@ -95,6 +95,8 @@ class TextMustache(shared actual String variable) satisfies Mustache {
  If the Mustache is indented: every line of the partial template will be indented"
 class PartialMustache(shared actual String variable, shared String indentation = "") satisfies Mustache {
 	string => "PARTIAL(``variable``)";
-	render(Context data) => "\n".join(Template(data["partials." + variable]?.string else "")
-		.render(data).split('\n'.equals).map((String element) => indentation + element));
+	render(Context data) => indentLines(Template(data["partials." + variable]?.string else "").render(data));
+	
+	String indentLines(String lines)
+			=> "\n".join(lines.split('\n'.equals).map((String element) => indentation + element));
 }
